@@ -21,7 +21,7 @@ x-all-vars: &all-vars
   COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}
   LABTEST_N8N_PORT: ${LABTEST_N8N_PORT:?LABTEST_N8N_PORT is required}
   N8N_VERSION: ${N8N_VERSION:-2.40.5}
-  GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Chicago}
+  GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
   WEBHOOK_URL: ${WEBHOOK_URL:-}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
   REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
@@ -35,8 +35,8 @@ x-logging: &default-logging
     max-file: "3"
 
 x-n8n-env: &n8n-env
-  GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Chicago}
-  TZ: ${GENERIC_TIMEZONE:-America/Chicago}
+  GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+  TZ: ${GENERIC_TIMEZONE:-UTC}
   N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY is required}
   N8N_DIAGNOSTICS_ENABLED: "false"
   N8N_SECURE_COOKIE: "false"
@@ -169,7 +169,7 @@ services:
     environment:
       N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?N8N_RUNNERS_AUTH_TOKEN is required}
       N8N_RUNNERS_TASK_BROKER_URI: http://n8n-worker:5679
-      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Chicago}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
     depends_on:
       n8n-worker: {condition: service_started}
     networks: [n8n-network]
