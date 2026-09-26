@@ -1,0 +1,20 @@
+# docker-compose.probe.yml: parser probe for Coolify (TEST-PLAN.md row T2f). Each service line below is one
+# shape to see what Coolify turns it into. Not an n8n stack; busybox only.
+name: ${COMPOSE_PROJECT_NAME:-labtest-probe}
+services:
+  probe:
+    image: busybox:1.37
+    command: ["sh", "-c", "ls -la /probe; echo default=$$PROBE_DEFAULT; exec sleep 2147483647"]
+    environment:
+      PROBE_DEFAULT: ${PROBE_DEFAULT:-short-form-default}   # a short-form default
+    volumes:
+      - ./labtest/MARKER:/probe/MARKER:ro                   # a ./ file mount
+      - probe_data:${PROBE_TARGET:-/probe/data}              # a ${} volume target
+    networks:
+      - default
+      - labtest-probe-ext                                   # an external network
+volumes:
+  probe_data:
+networks:
+  labtest-probe-ext:
+    external: true

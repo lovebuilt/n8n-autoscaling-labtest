@@ -1,0 +1,38 @@
+[
+  {
+    "id": "labtestwfecho001",
+    "name": "labtest echo (webhook to Code node)",
+    "active": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "labtest-echo",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "1b1f2c3d-0000-4000-8000-000000000001",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [0, 0],
+        "webhookId": "4d8b8d4f-f425-42b8-8c6d-86d2df772316"
+      },
+      {
+        "parameters": {
+          "jsCode": "const b = $input.first().json.body;\nreturn [{ json: { sum: Number(b.a) + Number(b.b) } }];"
+        },
+        "id": "1b1f2c3d-0000-4000-8000-000000000002",
+        "name": "Sum",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [220, 0]
+      }
+    ],
+    "connections": {
+      "Webhook": { "main": [[{ "node": "Sum", "type": "main", "index": 0 }]] }
+    },
+    "settings": { "executionOrder": "v1" },
+    "pinData": {}
+  }
+]

@@ -1,0 +1,8 @@
+[
+  {
+    "id": "labtestcred00001",
+    "name": "labtest dummy header",
+    "type": "httpHeaderAuth",
+    "data": { "name": "X-Labtest", "value": "labtest-dummy-not-a-secret" }
+  }
+]

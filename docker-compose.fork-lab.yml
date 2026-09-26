@@ -1,0 +1,30 @@
+# docker-compose.fork-lab.yml: third file on top of the fork's OWN recipe, so it can run on the lab machine
+# (TEST-PLAN.md row T1k). Use: -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.fork-lab.yml
+# What it had to reset, and why (the fork's recipe is written for one box, the dev VPS):
+#   - host ports 5678, 5432, 6379: the lab's own n8n already owns 5678; n8n moves to 127.0.0.1:5686,
+#     postgres and redis are not published at all
+#   - n8n, webhook and worker mounts of /home/dev/lab, /home/dev/.env, /backups and ./config/{gemini,claude,codex}:
+#     VPS-only paths; only the named data volume is kept
+#   - the external networks `shark` and `ai-env-n8n-link`: they exist only on the VPS; made local here
+networks:
+  shark: !override
+    driver: bridge
+  ai-env-n8n-link: !override
+    driver: bridge
+
+services:
+  redis:
+    ports: !reset []
+  postgres:
+    ports: !reset []
+  n8n:
+    ports: !override
+      - "127.0.0.1:5686:5678"
+    volumes: !override
+      - n8n_main:/n8n
+  n8n-webhook:
+    volumes: !override
+      - n8n_webhook:/n8n
+  n8n-worker:
+    volumes: !override
+      - n8n_main:/n8n
