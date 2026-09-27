@@ -8,7 +8,8 @@
 #      The Code node only runs on a worker's task runner, so a pass proves webhook, queue, worker, runner.
 #   3  the dummy credential exports decrypted to a file INSIDE the main container; only the sha256 of its
 #      value is printed and compared with the known value (proves the encryption key survived)
-#   4  n8n --version in main, webhook and every worker container: all equal (and equal to [expected-version])
+#   4  n8n --version in main, webhook and every worker container: all equal (and equal to [expected-version]);
+#      exactly one main, one webhook, at least one worker, and no empty version result
 set -u
 P="${1:?usage: check.sh <project> <base-url> [expected-version]}"
 URL="${2:?usage: check.sh <project> <base-url> [expected-version]}"; URL="${URL%/}"
@@ -35,28 +36,39 @@ fi
 if [ $s2a = PASS ] && [ $s2b = PASS ]; then r=PASS; else r=FAIL; fail=1; fi
 echo "STEP2 $r webhook via main: http=$code body=$body ($s2a) | via webhook process: $whout ($s2b)"
 
-# 3 credential decrypts (value never printed)
-main=$(cids n8n | head -1); got=none
+# 3 credential decrypts (value never printed). Repaired by lane 2 (verifier concern 5): a UNIQUE temp file made
+#   with mktemp inside the container, removed before and after; the export's own exit code must be 0 and the
+#   file must be non-empty, so a failed export can never hash a file left behind by an earlier run.
+main=$(cids n8n | head -1); got=none; xrc=none
 if [ -n "$main" ]; then
-  got=$(docker exec "$main" sh -c "n8n export:credentials --id=$CRED_ID --decrypted --output=/tmp/labtest-cred.json >/dev/null 2>&1; node -e \"const c=require('/tmp/labtest-cred.json');const x=Array.isArray(c)?c[0]:c;process.stdout.write(require('crypto').createHash('sha256').update(String(x.data.value)).digest('hex'))\" 2>/dev/null; rm -f /tmp/labtest-cred.json" 2>/dev/null)
+  out=$(docker exec "$main" sh -c 'f=$(mktemp /tmp/labtest-cred.XXXXXX) || exit 90; rm -f "$f"
+    n8n export:credentials --id='"$CRED_ID"' --decrypted --output="$f" >/dev/null 2>&1; x=$?
+    if [ $x -ne 0 ] || [ ! -s "$f" ]; then rm -f "$f"; echo "xrc=$x"; exit 0; fi
+    h=$(node -e "const c=require(process.argv[1]);const x=Array.isArray(c)?c[0]:c;process.stdout.write(require(\"crypto\").createHash(\"sha256\").update(String(x.data.value)).digest(\"hex\"))" "$f" 2>/dev/null)
+    rm -f "$f"; echo "xrc=0 $h"' 2>/dev/null)
+  xrc=$(echo "$out" | sed -n 's/^xrc=\([0-9]*\).*/\1/p' | tail -1); got=$(echo "$out" | tail -1 | awk '{print $2}'); got=${got:-none}
 fi
-if [ "$got" = "$KNOWN_SHA" ]; then echo "STEP3 PASS credential decrypts sha256=${got:0:12}"; else echo "STEP3 FAIL credential sha256=${got:0:12} want=${KNOWN_SHA:0:12}"; fail=1; fi
+if [ "$xrc" = 0 ] && [ "$got" = "$KNOWN_SHA" ]; then echo "STEP3 PASS credential decrypts export_rc=0 sha256=${got:0:12}"; else echo "STEP3 FAIL credential export_rc=${xrc:-none} sha256=${got:0:12} want=${KNOWN_SHA:0:12}"; fail=1; fi
 
-# 4 versions everywhere
-vers=""; allv=""
+# 4 versions everywhere. Repaired by lane 2 (verifier concern 5): main and webhook must each have exactly one
+#   container and at least one worker must exist; every container must return a version (an empty result is a
+#   FAIL, never dropped); all equal, and equal to [expected-version] when given.
+vers=""; allv=""; r=PASS; nmain=0; nwh=0; nwk=0
 for svc in n8n n8n-webhook n8n-worker; do
   for c in $(cids $svc); do
+    case $svc in n8n) nmain=$((nmain+1));; n8n-webhook) nwh=$((nwh+1));; n8n-worker) nwk=$((nwk+1));; esac
     v=$(docker exec "$c" n8n --version 2>/dev/null | tail -1 | tr -d '\r')
+    [ -n "$v" ] || { v=EMPTY; r=FAIL; }
     vers="$vers $svc:${c:0:12}=$v"; allv="$allv $v"
   done
 done
+[ $nmain -eq 1 ] && [ $nwh -eq 1 ] && [ $nwk -ge 1 ] || r=FAIL
 uniq=$(echo $allv | tr ' ' '\n' | grep -v '^$' | sort -u)
 n=$(echo "$uniq" | grep -c .)
-r=PASS
 if [ "$n" != 1 ]; then r=FAIL; fi
 if [ -n "$EXP" ] && [ "$uniq" != "$EXP" ]; then r=FAIL; fi
 [ $r = FAIL ] && fail=1
-echo "STEP4 $r versions:$vers"
+echo "STEP4 $r counts: main=$nmain webhook=$nwh workers=$nwk versions:$vers"
 
 echo "CHECK_RC=$fail"
 exit $fail
