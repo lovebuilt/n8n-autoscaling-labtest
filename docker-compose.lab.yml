@@ -118,6 +118,11 @@ services:
       - "127.0.0.1:${LABTEST_N8N_PORT:?LABTEST_N8N_PORT is required}:5678"
     volumes:
       - n8n_main:/home/node/.n8n
+    labels:   # lane2-proxy branch only (T2t): route through Coolify's Traefik by Host header
+      - traefik.enable=true
+      - traefik.http.routers.labtest-n8n.rule=Host(`n8n-v2.labtest.localhost`)
+      - traefik.http.routers.labtest-n8n.entrypoints=http
+      - traefik.http.services.labtest-n8n.loadbalancer.server.port=5678
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -133,6 +138,11 @@ services:
     command: webhook
     volumes:
       - n8n_webhook:/home/node/.n8n
+    labels:   # lane2-proxy branch only (T2t)
+      - traefik.enable=true
+      - traefik.http.routers.labtest-hook.rule=Host(`hook-v2.labtest.localhost`)
+      - traefik.http.routers.labtest-hook.entrypoints=http
+      - traefik.http.services.labtest-hook.loadbalancer.server.port=5678
     depends_on:
       n8n: {condition: service_healthy}
       postgres: {condition: service_healthy}
