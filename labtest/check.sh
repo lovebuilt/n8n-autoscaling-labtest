@@ -15,7 +15,7 @@ P="${1:?usage: check.sh <project> <base-url> [expected-version]}"
 URL="${2:?usage: check.sh <project> <base-url> [expected-version]}"; URL="${URL%/}"
 EXP="${3:-}"
 KNOWN_SHA=ef40cef51f079098b52ae8cbda4a89e99c9e88cc19b7026653a76c7045ab0dc6  # sha256("labtest-dummy-not-a-secret")
-CRED_ID=labtestcred00001
+CRED_ID="${CHECK_CRED_ID:-labtestcred00001}"   # override only for red-first tests (a credential that does not exist)
 cids() { docker ps -q --filter "label=com.docker.compose.project=$P" --filter "label=com.docker.compose.service=$1"; }
 fail=0
 echo "check: project=$P base=$URL expected=${EXP:-any} at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -44,7 +44,7 @@ if [ -n "$main" ]; then
   out=$(docker exec "$main" sh -c 'f=$(mktemp /tmp/labtest-cred.XXXXXX) || exit 90; rm -f "$f"
     n8n export:credentials --id='"$CRED_ID"' --decrypted --output="$f" >/dev/null 2>&1; x=$?
     if [ $x -ne 0 ] || [ ! -s "$f" ]; then rm -f "$f"; echo "xrc=$x"; exit 0; fi
-    h=$(node -e "const c=require(process.argv[1]);const x=Array.isArray(c)?c[0]:c;process.stdout.write(require(\"crypto\").createHash(\"sha256\").update(String(x.data.value)).digest(\"hex\"))" "$f" 2>/dev/null)
+    h=$(node -e "const c=JSON.parse(require(\"fs\").readFileSync(process.argv[1],\"utf8\"));const x=Array.isArray(c)?c[0]:c;process.stdout.write(require(\"crypto\").createHash(\"sha256\").update(String(x.data.value)).digest(\"hex\"))" "$f" 2>/dev/null)
     rm -f "$f"; echo "xrc=0 $h"' 2>/dev/null)
   xrc=$(echo "$out" | sed -n 's/^xrc=\([0-9]*\).*/\1/p' | tail -1); got=$(echo "$out" | tail -1 | awk '{print $2}'); got=${got:-none}
 fi
