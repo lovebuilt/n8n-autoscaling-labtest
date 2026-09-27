@@ -9,7 +9,8 @@
 #   3  the dummy credential exports decrypted to a file INSIDE the main container; only the sha256 of its
 #      value is printed and compared with the known value (proves the encryption key survived)
 #   4  n8n --version in main, webhook and every worker container: all equal (and equal to [expected-version]);
-#      exactly one main, one webhook, at least one worker, and no empty version result
+#      exactly one main, one webhook, at least one worker, no empty version result, and every version command
+#      exiting 0
 set -u
 P="${1:?usage: check.sh <project> <base-url> [expected-version]}"
 URL="${2:?usage: check.sh <project> <base-url> [expected-version]}"; URL="${URL%/}"
@@ -57,7 +58,11 @@ vers=""; allv=""; r=PASS; nmain=0; nwh=0; nwk=0
 for svc in n8n n8n-webhook n8n-worker; do
   for c in $(cids $svc); do
     case $svc in n8n) nmain=$((nmain+1));; n8n-webhook) nwh=$((nwh+1));; n8n-worker) nwk=$((nwk+1));; esac
-    v=$(docker exec "$c" n8n --version 2>/dev/null | tail -1 | tr -d '\r')
+    # Repaired by lane 3 (verifier 2 concern 4): the version command's own exit status must be 0; matching
+    # output from a command that failed is a FAIL, never a pass.
+    vo=$(docker exec "$c" n8n --version 2>/dev/null); vrc=$?
+    v=$(printf '%s\n' "$vo" | tail -1 | tr -d '\r')
+    [ $vrc -eq 0 ] || { v="RC$vrc:${v:-EMPTY}"; r=FAIL; }
     [ -n "$v" ] || { v=EMPTY; r=FAIL; }
     vers="$vers $svc:${c:0:12}=$v"; allv="$allv $v"
   done
