@@ -188,8 +188,8 @@ services:
       QUEUE_NAME: jobs
       N8N_WORKER_SERVICE_NAME: n8n-worker
       N8N_WORKER_RUNNER_SERVICE_NAME: n8n-worker-runner
-      COMPOSE_FILE_PATHS: /app/docker-compose.lab.yml
-      COMPOSE_PROJECT_DIRECTORY: /app
+      COMPOSE_FILE_PATHS: ""          # lane2-t2o branches: empty, so the fork's label discovery is used
+      COMPOSE_PROJECT_DIRECTORY: ""
       MIN_REPLICAS: "1"
       MAX_REPLICAS: "3"
       SCALE_UP_QUEUE_THRESHOLD: "5"
