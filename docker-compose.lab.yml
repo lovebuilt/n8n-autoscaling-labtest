@@ -3,7 +3,7 @@
 #
 # Rules this file keeps (TEST-PLAN.md "The one recipe"):
 #   - top-level name from COMPOSE_PROJECT_NAME (required), and the autoscaler gets the same value
-#   - stock n8n images at ${N8N_VERSION:-2.39.8}; redis and postgres as in the fork
+#   - stock n8n images at ${N8N_VERSION:-2.40.5}; redis and postgres as in the fork
 #   - no ./ mounts, no ${} in a volume target, no external networks
 #   - ${VAR:?} guards on every secret
 #   - only n8n main is published, on 127.0.0.1:${LABTEST_N8N_PORT}
@@ -20,7 +20,7 @@ name: ${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}
 x-all-vars: &all-vars
   COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}
   LABTEST_N8N_PORT: ${LABTEST_N8N_PORT:?LABTEST_N8N_PORT is required}
-  N8N_VERSION: ${N8N_VERSION:-2.39.8}
+  N8N_VERSION: ${N8N_VERSION:-2.40.5}
   GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Chicago}
   WEBHOOK_URL: ${WEBHOOK_URL:-}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
@@ -60,7 +60,7 @@ x-n8n-env: &n8n-env
   N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?N8N_RUNNERS_AUTH_TOKEN is required}
 
 x-n8n: &service-n8n
-  image: n8nio/n8n:${N8N_VERSION:-2.39.8}
+  image: n8nio/n8n:${N8N_VERSION:-2.40.5}
   restart: unless-stopped
   logging: *default-logging
   environment: *n8n-env
@@ -163,7 +163,7 @@ services:
 
   # task runner sidecar; scaled one to one with n8n-worker (as in the fork)
   n8n-worker-runner:
-    image: n8nio/runners:${N8N_VERSION:-2.39.8}
+    image: n8nio/runners:${N8N_VERSION:-2.40.5}
     restart: unless-stopped
     logging: *default-logging
     environment:
