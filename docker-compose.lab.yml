@@ -78,7 +78,7 @@ networks:
 
 services:
   redis:
-    image: redis:8-alpine
+    image: redis:8-alpine-labtest-no-such-tag
     restart: unless-stopped
     logging: *default-logging
     environment:
